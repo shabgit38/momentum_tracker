@@ -1,5 +1,5 @@
 def main():
-    print("Hello from stk-hldgs!")
+    print("Hello from momentum_tracker!")
 
 
 if __name__ == "__main__":
