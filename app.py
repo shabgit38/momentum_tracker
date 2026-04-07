@@ -25,11 +25,9 @@ raw_input = st.text_input(
     placeholder="e.g. AAPL, MSFT, GOOGL"
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
 # TICKER PARSING
 # Appends .NS suffix for NSE India.  User may also type the suffix explicitly
 # (e.g. RELIANCE.NS) — we detect and skip double-suffixing.
-# ─────────────────────────────────────────────────────────────────────────────
 KNOWN_SUFFIXES = (".NS", ".BO", ".NFO")
 
 def normalise_ticker(raw: str) -> str:
@@ -44,19 +42,15 @@ if not tickers:
     st.warning("Enter at least one ticker symbol.")
     st.stop()
 
-# ─────────────────────────────────────────────────────────────────────────────
 # LAYOUT CONSTANTS
-# ─────────────────────────────────────────────────────────────────────────────
 EMA_COLS = ["EMA10", "EMA20", "EMA50", "EMA100", "EMA200"]
 ROW_PX   = 35    # approximate height of one table row in pixels
 HDR_PX   = 38    # table header height in pixels
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # HELPER: INSERT CURRENT PRICE ROW
 # Given a list of (label, value) sorted descending by value, inserts a
 # "▶ Current" row adjacent to whichever level is numerically closest.
-# ─────────────────────────────────────────────────────────────────────────────
 
 def _insert_current(ordered: list[tuple[str, float]], current_price: float) -> list[dict]:
     closest = min(range(len(ordered)), key=lambda i: abs(ordered[i][1] - current_price))
@@ -74,10 +68,8 @@ def _insert_current(ordered: list[tuple[str, float]], current_price: float) -> l
     return rows
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # TABLE BUILDERS
 # Each function returns a styled DataFrame ready to pass to st.dataframe().
-# ─────────────────────────────────────────────────────────────────────────────
 
 def build_ohlc_ema_table(df, current_price: float) -> pd.DataFrame:
     """OHLC of last session + all 5 EMAs, sorted descending with ▶ Current."""
@@ -143,7 +135,6 @@ def build_hl_table(df, current_price: float) -> pd.DataFrame:
     rows    = _insert_current(ordered, current_price)
     df_out  = pd.DataFrame(rows).set_index("Level")
 
-    # ── % Range column ────────────────────────────────────────────────────────
     # For each period High/Low pair, compute where current price sits in that
     # range as a percentage.  Non-period rows (W Close, M Close, ▶ Current)
     # get "—" as they are single prices, not ranges.
@@ -163,11 +154,9 @@ def build_hl_table(df, current_price: float) -> pd.DataFrame:
     return df_out
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # SCORE BREAKDOWN TABLE
 # Converts the momentum_score() dict into a two-column DataFrame for display
 # in the expandable breakdown section of each ticker card.
-# ─────────────────────────────────────────────────────────────────────────────
 
 def build_score_breakdown(score_dict: dict) -> pd.DataFrame:
     """
@@ -187,9 +176,7 @@ def build_score_breakdown(score_dict: dict) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("Component")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # SUMMARY LINE  (text-based position description, shown above tables)
-# ─────────────────────────────────────────────────────────────────────────────
 
 def generate_summary(df, current_price: float, momentum_text: str) -> str:
     """
@@ -200,7 +187,6 @@ def generate_summary(df, current_price: float, momentum_text: str) -> str:
 # DATA FETCH LOOP
 # Fetches data for all tickers, stores results keyed by ticker.
 # Errors are stored as Exception objects so rendering can show them gracefully.
-# ─────────────────────────────────────────────────────────────────────────────
 
 progress   = st.progress(0, text="Fetching data…")
 stock_data: dict = {}
@@ -219,10 +205,8 @@ for i, ticker in enumerate(tickers):
 progress.empty()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # COMPUTE SCORES FOR VALID TICKERS
 # We compute scores here (before rendering) so we can sort tickers by score.
-# ─────────────────────────────────────────────────────────────────────────────
 
 scores: dict[str, float] = {}    # ticker → total momentum score
 
@@ -246,9 +230,7 @@ for ticker, data in stock_data.items():
 ranked_tickers = sorted(tickers, key=lambda t: scores[t], reverse=True)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # RENDER — one card per ticker, ranked by score
-# ─────────────────────────────────────────────────────────────────────────────
 
 for ticker in ranked_tickers:
     data = stock_data[ticker]
@@ -267,7 +249,6 @@ for ticker in ranked_tickers:
     current_price = float(df.iloc[-1]["Close"])
 
     try:
-        # ── Compute all derived data ──────────────────────────────────────────
         d_pivots  = pivot_points(df)
         w_ohlc    = get_weekly_ohlc(df)
         w_pivots  = weekly_pivot_points(w_ohlc)
@@ -288,7 +269,6 @@ for ticker in ranked_tickers:
         st.divider()
         continue
 
-    # ── Momentum badge ────────────────────────────────────────────────────────
     # Coloured pill showing label + numeric score at a glance.
     # Colour is driven by momentum_label() and maps to the 5-tier system.
     badge_html = (
@@ -298,10 +278,8 @@ for ticker in ranked_tickers:
     )
     st.markdown(badge_html, unsafe_allow_html=True)
 
-    # ── Text summary ──────────────────────────────────────────────────────────
     st.markdown(summary)
 
-    # ── Expandable tables ─────────────────────────────────────────────────────
     with st.expander("Show / Hide Tables", expanded=False):
 
         # Row 1: OHLC+EMAs | Daily Pivots | Weekly Pivots
@@ -365,9 +343,7 @@ for ticker in ranked_tickers:
 
     st.divider()
 
-# ─────────────────────────────────────────────────────────────────────────────
 # FOOTER
-# ─────────────────────────────────────────────────────────────────────────────
 st.caption(
     "OHLC/EMAs = last session · Daily pivots = prev session H/L/C · "
     "Weekly pivots = prev completed Mon–Fri week · "
