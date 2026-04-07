@@ -14,6 +14,7 @@ from indicators import (
     weekly_pivot_points,
     momentum_score,
     momentum_label,
+    momentum_summary,
 )
 
 st.set_page_config(page_title="Momentum Tracker", layout="wide")
@@ -190,10 +191,10 @@ def build_score_breakdown(score_dict: dict) -> pd.DataFrame:
 # SUMMARY LINE  (text-based position description, shown above tables)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def generate_summary(df, current_price: float, score_dict: dict, label: str) -> str:
+def generate_summary(df, current_price: float, momentum_text: str) -> str:
     """
-    One-line human-readable summary of price position vs EMAs, daily pivots,
-    and the closest period H/L level.
+    Human-readable summary of price position vs EMAs, daily pivots,
+    closest period H/L level, plus momentum score explanation text.
     """
     last  = df.iloc[-1]
     parts = []
@@ -244,19 +245,10 @@ def generate_summary(df, current_price: float, score_dict: dict, label: str) -> 
                 "below" if current_price < closest_val else "at")
     parts.append(f"{direction} {closest_label}")
 
-    total = float(score_dict["total"])
-    momentum_line = (
-        f"Momentum score {total:+.2f} ({label}) on a -20 to +20 scale. "
-        "Positive = bullish bias, negative = bearish bias."
-    )
-    components_line = (
-        "Built from EMA position/stack, daily+weekly pivot zones, and 6M/3M/1M "
-        "range position."
-    )
     return (
         f"**▶ {round(current_price, 2)}** — "
         + " · ".join(parts)
-        + f"  \n{momentum_line}  \n{components_line}"
+        + f"  \n{momentum_text}"
     )
 
 
@@ -343,7 +335,8 @@ for ticker in ranked_tickers:
         daily_piv_df  = build_pivot_table(d_pivots, current_price)
         weekly_piv_df = build_pivot_table(w_pivots, current_price) if w_pivots else None
         hl_df       = build_hl_table(df, current_price)
-        summary     = generate_summary(df, current_price, sc, label)
+        momentum_text = momentum_summary(sc, label)
+        summary     = generate_summary(df, current_price, momentum_text)
         breakdown   = build_score_breakdown(sc)
 
     except Exception as e:

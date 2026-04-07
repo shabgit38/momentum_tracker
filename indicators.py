@@ -233,6 +233,7 @@ def momentum_score(
 
     # ── C4: Weekly pivot zone ─────────────────────────────────────────────────
     # If weekly pivot data is unavailable, this component contributes 0.
+    weekly_missing = weekly_pivots is None
     c4 = _pivot_zone_score(current_price, weekly_pivots, max_score=2.0) \
          if weekly_pivots else 0.0
 
@@ -261,6 +262,7 @@ def momentum_score(
         "c7_1m_range":     c7,
         "ema_positions":   ema_positions,   # {EMAxx: (value, ±1)}
         "stack_detail":    stack_detail,    # {EMAx>EMAy: bool}
+        "weekly_pivots_missing": weekly_missing,
     }
 
 
@@ -287,3 +289,96 @@ def momentum_label(score: float) -> tuple[str, str]:
     elif score >= -4:  return "Neutral",       "#888888"   # grey
     elif score >= -12: return "Bear",          "#e67e22"   # orange
     else:              return "Strong Bear",   "#dc3545"   # red
+
+
+# ------------------------------------------------------------------------------
+# MOMENTUM SUMMARY (human-readable explanation for UI)
+# ------------------------------------------------------------------------------
+
+def _pivot_zone_text(score: float, max_score: float) -> str:
+    """
+    Convert a pivot zone score back into a readable zone description.
+    """
+    if max_score == 0:
+        return "pivot zone: unavailable"
+    frac = round(score / max_score, 2)
+    if   frac >=  1.00: return "above R3 (strongest bull zone)"
+    elif frac >=  0.75: return "between R2 and R3"
+    elif frac >=  0.50: return "between R1 and R2"
+    elif frac >=  0.25: return "between Pivot and R1"
+    elif frac <= -1.00: return "below S3 (strongest bear zone)"
+    elif frac <= -0.75: return "between S3 and S2"
+    elif frac <= -0.50: return "between S2 and S1"
+    elif frac <= -0.25: return "between S1 and Pivot"
+    return "near Pivot (neutral zone)"
+
+
+def _range_pos_text(score: float, max_score: float) -> str:
+    """
+    Convert a range position score back into a readable location in the range.
+    """
+    if max_score == 0:
+        return "range position: unavailable"
+    if score >= max_score:       return "near the period high"
+    if score <= -max_score:      return "near the period low"
+    if score == 0:               return "mid-range"
+    if score > 0:                return "upper half of the range"
+    return "lower half of the range"
+
+
+def momentum_summary(score_dict: dict, label: str) -> str:
+    """
+    Build a multi-line explanation of what each momentum component implies.
+    Returns markdown-friendly text.
+    """
+    total = float(score_dict["total"])
+
+    # C1: EMA position
+    ema_positions = score_dict.get("ema_positions", {})
+    above = [k for k, (_, d) in ema_positions.items() if d > 0]
+    below = [k for k, (_, d) in ema_positions.items() if d < 0]
+    c1_text = (
+        f"C1 EMA position: {len(above)} above / {len(below)} below "
+        "the 5 EMAs (price vs EMA10/20/50/100/200)."
+    )
+
+    # C2: EMA stack order
+    stack_detail = score_dict.get("stack_detail", {})
+    aligned = [k for k, v in stack_detail.items() if v]
+    c2_text = (
+        f"C2 EMA stack: {len(aligned)} of 4 fast>slow pairs aligned "
+        "(EMA10>20>50>100>200)."
+    )
+
+    # C3/C4: Pivot zones
+    c3 = float(score_dict["c3_daily_pivot"])
+    c4 = float(score_dict["c4_weekly_pivot"])
+    c3_text = f"C3 Daily pivots: {_pivot_zone_text(c3, 4.0)}."
+    if score_dict.get("weekly_pivots_missing", False):
+        c4_text = "C4 Weekly pivots: unavailable (insufficient data)."
+    else:
+        c4_text = f"C4 Weekly pivots: {_pivot_zone_text(c4, 2.0)}."
+
+    # C5/C6/C7: Range positions
+    c5 = float(score_dict["c5_6m_range"])
+    c6 = float(score_dict["c6_3m_range"])
+    c7 = float(score_dict["c7_1m_range"])
+    c5_text = f"C5 6M range: {_range_pos_text(c5, 3.0)}."
+    c6_text = f"C6 3M range: {_range_pos_text(c6, 2.0)}."
+    c7_text = f"C7 1M range: {_range_pos_text(c7, 1.0)}."
+
+    header = (
+        f"Momentum score {total:+.2f} ({label}) on a -20 to +20 scale. "
+        "Positive = bullish bias, negative = bearish bias."
+    )
+
+    return (
+        f"{header}  \n"
+        f"{c1_text}  \n"
+        f"{c2_text}  \n"
+        f"{c3_text}  \n"
+        f"{c4_text}  \n"
+        f"{c5_text}  \n"
+        f"{c6_text}  \n"
+        f"{c7_text}"
+    )
