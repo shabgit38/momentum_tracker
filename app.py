@@ -193,66 +193,10 @@ def build_score_breakdown(score_dict: dict) -> pd.DataFrame:
 
 def generate_summary(df, current_price: float, momentum_text: str) -> str:
     """
-    Human-readable summary of price position vs EMAs, daily pivots,
-    closest period H/L level, plus momentum score explanation text.
+    Human-readable momentum score explanation text.
     """
-    last  = df.iloc[-1]
-    parts = []
+    return momentum_text
 
-    # ── EMA position ──────────────────────────────────────────────────────────
-    ema_vals = {e: float(last[e]) for e in EMA_COLS}
-    above = [e for e in EMA_COLS if current_price > ema_vals[e]]
-    below = [e for e in EMA_COLS if current_price < ema_vals[e]]
-
-    if above and below:
-        parts.append(f"above {above[-1]}, below {below[0]}")
-    elif above:
-        parts.append("above all EMAs")
-    else:
-        parts.append("below all EMAs")
-
-    # ── Daily pivot position ──────────────────────────────────────────────────
-    pivots  = pivot_points(df)
-    p_order = [
-        ("R5", pivots["R5"]), ("R4", pivots["R4"]), ("R3", pivots["R3"]),
-        ("R2", pivots["R2"]), ("R1", pivots["R1"]),
-        ("Pivot", pivots["Pivot"]),
-        ("S1", pivots["S1"]), ("S2", pivots["S2"]), ("S3", pivots["S3"]),
-        ("S4", pivots["S4"]), ("S5", pivots["S5"]),
-    ]
-    lvl_above = [(l, v) for l, v in p_order if v > current_price]
-    lvl_below = [(l, v) for l, v in p_order if v < current_price]
-
-    if lvl_above and lvl_below:
-        nearest_above = lvl_above[-1][0]
-        nearest_below = lvl_below[0][0]
-        parts.append(f"between {nearest_above} and {nearest_below}")
-    elif not lvl_above:
-        parts.append("above R5")
-    else:
-        parts.append("below S5")
-
-    # ── Period H/L closest level ──────────────────────────────────────────────
-    hl     = get_high_low_resampled(df)
-    all_hl = {}
-    for period in ["1W", "1M", "3M", "6M", "1Y"]:
-        h, l = hl[period]
-        all_hl[f"{period} High"] = float(h)
-        all_hl[f"{period} Low"]  = float(l)
-
-    closest_label, closest_val = min(all_hl.items(), key=lambda x: abs(x[1] - current_price))
-    direction = "above" if current_price > closest_val else (
-                "below" if current_price < closest_val else "at")
-    parts.append(f"{direction} {closest_label}")
-
-    return (
-        f"**▶ {round(current_price, 2)}** — "
-        + " · ".join(parts)
-        + f"  \n{momentum_text}"
-    )
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # DATA FETCH LOOP
 # Fetches data for all tickers, stores results keyed by ticker.
 # Errors are stored as Exception objects so rendering can show them gracefully.
