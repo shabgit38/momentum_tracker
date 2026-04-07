@@ -367,13 +367,10 @@ def momentum_summary(score_dict: dict, label: str) -> str:
     c6_text = f"C6 3M range: {_range_pos_text(c6, 2.0)}."
     c7_text = f"C7 1M range: {_range_pos_text(c7, 1.0)}."
 
-    header = (
-        f"Momentum score {total:+.2f} ({label}) on a -20 to +20 scale. "
-        "Positive = bullish bias, negative = bearish bias."
-    )
+   
 
     return (
-        f"{header}  \n"
+        
         f"{c1_text}  \n"
         f"{c2_text}  \n"
         f"{c3_text}  \n"
