@@ -314,7 +314,7 @@ for ticker in ranked_tickers:
                 use_container_width=True,
                 height=len(ohlc_ema_df) * ROW_PX + HDR_PX,
             )
-
+        """
         with col2:
             st.caption("Daily Pivot Levels  (prev session H/L/C)")
             st.dataframe(
@@ -322,8 +322,8 @@ for ticker in ranked_tickers:
                 use_container_width=True,
                 height=len(daily_piv_df) * ROW_PX + HDR_PX,
             )
-
-        with col3:
+        """
+        with col2:
             st.caption("Weekly Pivot Levels  (prev completed week H/L/C)")
             if weekly_piv_df is not None:
                 st.dataframe(
@@ -334,7 +334,16 @@ for ticker in ranked_tickers:
             else:
                 st.info("Insufficient data for weekly pivots.")
 
+        with col3:
+            st.caption("Period High / Low  (with % range position)")
+            st.dataframe(
+                hl_df.style.format({"Value": "{:.2f}"}, na_rep="—"),
+                use_container_width=True,
+                height=len(hl_df) * ROW_PX + HDR_PX,
+            )
+
         # Row 2: Period H/L (full width) | Score breakdown
+        """
         col4, col5 = st.columns([2, 1])
 
         with col4:
@@ -344,7 +353,7 @@ for ticker in ranked_tickers:
                 use_container_width=True,
                 height=len(hl_df) * ROW_PX + HDR_PX,
             )
-
+        
         with col5:
             st.caption("Momentum Score Breakdown  (total range ±20)")
             st.dataframe(
@@ -352,6 +361,7 @@ for ticker in ranked_tickers:
                 use_container_width=True,
                 height=len(breakdown) * ROW_PX + HDR_PX,
             )
+        """
 
     st.divider()
 
